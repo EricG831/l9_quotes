@@ -1,0 +1,21 @@
+<%- include ('templates/header'); -%>
+
+<div class='container'>
+    <div class='jumbotron'>
+        <h1 style='text-align:center;'> Query Results </h1>
+        <div class='row'>
+            <div class='col-sm-4'></div>
+            <button class='col-sm-4 btn btn-info btn-block'onclick='location.href="/";'>Search Again</button>
+            <div class='col-sm-4'></div>
+        </div>
+    </div>
+    
+    <h3>Quotes</h3>
+    <ul>
+        <%quotes.forEach(function(q){%>
+            <li><%=q.quote%></li>
+        <%});%>
+    </ul>
+</div>
+
+<%- include ('templates/footer'); -%>
