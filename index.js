@@ -1,11 +1,26 @@
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 /* Require external APIs and start our application instance */
 var express = require('express');
 var mysql = require('mysql');
 var app = express();
+var session = require('express-session');
+var passport = require('passport');
+var bodyParser = require('body-parser');
 
 /* Configure our server to read public folder and ejs files */
 app.use(express.static('public'));
+app.use(bodyParser.urlencoded({extended: false}));
 app.set('view engine', 'ejs');
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 /* Configure MySQL DBMS */
 const connection = mysql.createConnection({
@@ -125,10 +140,137 @@ app.get('/gender', function(req, res){
     });
 });
 
+app.get('/login', function(req, res){
+    res.render('login');
+});
+
+app.post('/login', function(req, res){
+    console.log(req.body.password);
+    
+    if(req.body.password == 'pass'){
+        req.session.login = 'admin';
+            var stmt = 'select * from l9_author;';
+            connection.query(stmt, function(error, found){
+    	    var authors = null;
+    	    if(error) throw error;
+    	    if(found.length){
+    	        authors = found;
+    	        // Convert the Date type into the String type
+    	       // authors.dob = authors.dob.toString().split(' ').slice(0,4).join(' ');
+    	       // authors.dod = authors.dod.toString().split(' ').slice(0,4).join(' ');
+    	    }
+    	    res.render('adminPage', {authors: authors});
+    	});
+    }
+});
+
+app.get('/newAuthor', function(req, res){
+    res.render('author_new');
+});
+
+/* Create a new author - Add author into DBMS */
+app.post('/author/new', function(req, res){
+   //console.log(req.body);
+   var stmt = 'SELECT COUNT(*) FROM l9_author;';
+   connection.query(stmt, function(error, result){
+       if(error) throw error;
+       if(result.length){
+            var authorId = result[0]['COUNT(*)'] + 1;
+            //insert to DB
+            var stmt = 'INSERT INTO l9_author ' +
+                      '(authorId, firstName, lastName, dob, dod, sex, profession, country, biography) '+
+                      'VALUES ' +
+                      '(' + 
+                       authorId + ',"' +
+                       req.body.firstname + '","' +
+                       req.body.lastname + '","' +
+                       req.body.dob + '","' +
+                       req.body.dod + '","' +
+                       req.body.sex + '","' +
+                       req.body.profession + '","' +
+                       req.body.country + '","' +
+                       req.body.biography + '"' +
+                       ');';
+            console.log(stmt);
+            connection.query(stmt, function(error, result){
+                if(error) throw error;
+                res.redirect('/');
+            })
+       }
+   });
+});
+
+/* Delete an author record */
+app.get('/author/:aid/delete', function(req, res){
+    var stmt = 'DELETE from l9_author WHERE authorId='+ req.params.aid + ';';
+    connection.query(stmt, function(error, result){
+        if(error) throw error;
+        res.redirect('/');
+    });
+});
+
+/* Delete an author record */
+app.get('/uSure/:aid', function(req, res){
+    var stmt = 'select * from l9_author WHERE authorId='+ req.params.aid + ';';
+    connection.query(stmt, function(error, result){
+         var author = null;
+        if(error) throw error;
+        author = result[0];
+        res.render('uSure', {author: author});
+    });
+});
+
+
+app.get('/author/:aid/edit', function(req, res){
+    var stmt = 'SELECT * FROM l9_author WHERE authorId=' + req.params.aid + ';';
+    connection.query(stmt, function(error, results){
+       if(error) throw error;
+       if(results.length){
+           var author = results[0];
+           author.dob = author.dob.toISOString().split('T')[0];
+           author.dod = author.dod.toISOString().split('T')[0];
+           res.render('author_edit', {author: author});
+       }
+    });
+});
+
+/* Edit an author record - Update an author in DBMS */
+app.post('/author/:aid', function(req, res){
+    console.log(req.body);
+    var stmt = 'UPDATE l9_author SET ' +
+                'firstName = "'+ req.body.firstname + '",' +
+                'lastName = "'+ req.body.lastname + '",' +
+                'dob = "'+ req.body.dob + '",' +
+                'dod = "'+ req.body.dod + '",' +
+                'sex = "'+ req.body.sex + '",' +
+                'profession = "'+ req.body.profession + '",' +
+                'portrait = "'+ req.body.portrait + '",' +
+                'country = "'+ req.body.country + '",' +
+                'biography = "'+ req.body.biography + '"' +
+                'WHERE authorId = ' + req.params.aid + ";"
+    //console.log(stmt);
+    connection.query(stmt, function(error, result){
+        if(error) throw error;
+        res.redirect('/');
+    });
+});
+
 /* The handler for undefined routes */
 app.get('*', function(req, res){
    res.render('error'); 
 });
+
+/* Middleware for authentication */
+function check_auth(req, res, next) {
+  //  if the user isn't logged in, redirect them to a login page
+  if(!req.session.login) {
+    res.redirect("/login");
+    return; 
+  }
+  //  the user is logged in, so call next()
+  next();
+}
+
 
 /* Start the application server */
 app.listen(process.env.PORT || 3000, function(){

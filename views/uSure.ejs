@@ -1,0 +1,14 @@
+<%- include ('templates/header'); -%>
+
+<div class='container'></div>
+    <%if(!author){%>
+        <h3>There is no authors</h3>
+    <%}
+    else{%>
+       <h3>Are you sure you want to delete <%=author.firstName%> <%=author.lastName%>?</h3>
+       <a href='/'>no</a>
+       <a href='/author/<%=author.authorId%>/delete'>yes</a>
+    <%}%>
+</div>
+
+<%- include ('templates/footer'); -%>

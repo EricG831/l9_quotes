@@ -1,0 +1,37 @@
+<%- include ('templates/header'); -%>
+
+<div class='container'></div>
+    <%if(!authors){%>
+        <h3>There is no authors</h3>
+    <%}
+    else{%>
+       
+        <table>
+        		<th><h4> ID </h4></th>
+        		<th><h4> First Name </h4></th>
+        		<th><h4> Last Name <h4></th>
+        		<th><h4> DOB <h4></th>
+        		<th><h4> DOD <h4></th>
+        		<th><a href='/newAuthor'>New Author</a></th>
+        		<tr><td colspan="10"><hr/></td>
+        		<%authors.forEach(function(a){%>
+            		<tr class= 'bookLabels'>
+            			<form action='/home' method='GET'>
+            				<td><%=a.authorId%></td>
+	            			<td><%=a.firstName%></td>
+	            			<td><%=a.lastName%></td>
+	            			<td><%=a.dob%></td>
+	            			<td><%=a.dod%></td>
+	       
+	            			<td><a href='/uSure/<%=a.authorId%>'>Delete</a></td>
+	            			<td><a href='/author/<%=a.authorId%>/edit'>Edit</a></td>
+            			</form>
+            		</tr>
+            		<br>
+        		<%});%>
+
+        	</table>
+    <%}%>
+</div>
+
+<%- include ('templates/footer'); -%>
